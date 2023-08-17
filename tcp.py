@@ -29,21 +29,29 @@ class Servidor:
             print('descartando segmento com checksum incorreto')
             return
 
-        payload = segment[4*(flags>>12):]
+        payload = segment[4 * (flags >> 12):]
         id_conexao = (src_addr, src_port, dst_addr, dst_port)
 
         if (flags & FLAGS_SYN) == FLAGS_SYN:
             # A flag SYN estar setada significa que é um cliente tentando estabelecer uma conexão nova
             conexao = self.conexoes[id_conexao] = Conexao(self, id_conexao)
-
-            # Responder ao SYN com SYN+ACK para aceitar a conexão
-            initial_seq_no = random.randint(0, 0xffff)  # Número de sequência inicial aleatório
-            syn_ack_segment = make_header(self.porta, src_port, initial_seq_no, seq_no + 1, FLAGS_SYN | FLAGS_ACK)
-            syn_ack_segment = fix_checksum(syn_ack_segment, dst_addr, src_addr)  # Corrigir checksum
+            
+            # Gerando um número de sequência aleatório para o SYN+ACK
+            seq_no_synack = random.randint(0, 0xffff)
+            
+            # Construindo o segmento SYN+ACK para aceitar a conexão
+            syn_ack_segment = make_header(self.porta, src_port, seq_no_synack, seq_no + 1, FLAGS_SYN | FLAGS_ACK)
+            
+            # Corrigindo o checksum do segmento SYN+ACK
+            syn_ack_segment = fix_checksum(syn_ack_segment, dst_addr, src_addr)
+            
+            # Enviando o segmento SYN+ACK para o cliente
             self.rede.enviar(syn_ack_segment, src_addr)
-
-            # TODO: você pode implementar o handshake completo aqui ou dentro da classe Conexao.
-
+            
+            # Se você quiser adicionar um temporizador de timeout para a resposta ACK do cliente,
+            # pode fazê-lo aqui ou na classe Conexao
+            
+            # Chamando o callback para a camada de aplicação
             if self.callback:
                 self.callback(conexao)
         elif id_conexao in self.conexoes:
