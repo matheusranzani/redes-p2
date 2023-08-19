@@ -112,3 +112,4 @@ class Conexao:
         self.servidor.rede.enviar(segmento, self.id_conexao[2])
 
 
+
